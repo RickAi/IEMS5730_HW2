@@ -158,7 +158,7 @@ public class WordCountTopology {
     public static final String ID_SPLIT_BOLT = "split-bolt";
     public static final String ID_COUNT_BOLT = "count-bolt";
 
-    public static final String DATA_PATH = "StormData_tmp.txt";
+    public static final String DATA_PATH = "StormData.txt";
     public static final String RESULT_PATH = "wordcount_result.txt";
 
     // Counter Code START
