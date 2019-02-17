@@ -188,7 +188,7 @@ public class WordCountTopology {
     public static final String ID_SPLIT_BOLT = "split-bolt";
     public static final String ID_COUNT_BOLT = "count-bolt";
 
-    public static final String DATA_PATH = "StormData.txt";
+    public static final String DATA_PATH = "StormData_tmp.txt";
     public static final String RESULT_PATH = "wordcount_result.txt";
 
     public static void main(String[] args) {
@@ -197,7 +197,7 @@ public class WordCountTopology {
         // since file read in spout is hard to achieve parallelism
         builder.setSpout(ID_FILE_READ_SPOUT, new FileReaderSpout(), 1);
         builder.setBolt(ID_SPLIT_BOLT, new SplitSentenceBolt(), 8).shuffleGrouping(ID_FILE_READ_SPOUT);
-        builder.setBolt(ID_COUNT_BOLT, new WordCountBolt(), 1).shuffleGrouping(ID_SPLIT_BOLT);
+        builder.setBolt(ID_COUNT_BOLT, new WordCountBolt(), 1).globalGrouping(ID_SPLIT_BOLT);
 
         Config conf = new Config();
         conf.setDebug(true);
@@ -211,9 +211,9 @@ public class WordCountTopology {
                 LocalCluster cluster = new LocalCluster();
                 cluster.submitTopology("word-count", conf, builder.createTopology());
 
-                // local debug cluster only process 1 hour
-                // make sure the time is long enough, the debug user have to stop manually
-                Thread.sleep(60 * 1000 * 60);
+                // local debug cluster only process 20min
+                // make sure the time is long enough until the debug user stop manually
+                Thread.sleep(20 * 60 * 1000);
 
                 cluster.shutdown();
             }

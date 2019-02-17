@@ -4,16 +4,27 @@ import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
-public class TwitterHashtagTopology {
-
-
+public class TwitterHashTagTopology {
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
+        TweetSpout tweetSpout = new TweetSpout(
+                "uIf2XoMNpF08egIeVSF4cXBfT",
+                "YXU76uvy7BJTzjxunCR0iYnEnWOBHadcAAHNVTINaXqiITesjt",
+                "804585635767930880-0n6IHZ0XSQfOgel14oeG93spT8ObkZn",
+                "xl4ft5od8Kks17FakZv30N3VR0LSJmmG2uqCOAtfZ75j3"
+        );
+        builder.setSpout("tweet-spout", tweetSpout, 1);
+        builder.setBolt("hashtag-bolt", new HashTagBolt(), 10).shuffleGrouping("tweet-spout");
+        builder.setBolt("rolling-count-bolt", new RollingCountBolt(30, 10), 1)
+                .fieldsGrouping("hashtag-bolt", new Fields("type", "hashtag"));
+        builder.setBolt("reporter-bolt", new ReporterBolt(), 1).globalGrouping("rolling-count-bolt");
 
         Config conf = new Config();
-        conf.setDebug(true);
+        // turn this on if debug is needed
+        conf.setDebug(false);
 
         try {
             if (args != null && args.length > 0) {
@@ -25,7 +36,7 @@ public class TwitterHashtagTopology {
                 cluster.submitTopology("twitter-hashtag", conf, builder.createTopology());
 
                 // local debug, sleep 10s
-                Thread.sleep(10 * 1000);
+                Thread.sleep(60 * 1000);
 
                 cluster.shutdown();
             }
