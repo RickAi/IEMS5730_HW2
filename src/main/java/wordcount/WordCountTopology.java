@@ -51,6 +51,7 @@ public class WordCountTopology {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
+                    // make sure the file only processed once
                     processed = true;
                 }
             }
@@ -74,6 +75,7 @@ public class WordCountTopology {
         @Override
         public void execute(Tuple tuple) {
             String line = tuple.getStringByField("line");
+            // split with regex, only include alphabet code
             String[] words = line.split("\\W+");
             for (String word : words) {
                 if (!word.isEmpty()) {
@@ -119,6 +121,11 @@ public class WordCountTopology {
 
         @Override
         public void cleanup() {
+            // dump counters into the console
+            dumpCounters();
+
+            System.out.println("cleanup, sortByValue counterMap start");
+            // sort and save result into local file
             Utils.sortByValue(counterMap, new Comparator<Integer>() {
                 @Override
                 public int compare(Integer o1, Integer o2) {
@@ -126,6 +133,7 @@ public class WordCountTopology {
                 }
             });
 
+            System.out.println("cleanup, start to save counterMap into file");
             FileWriter fw = null;
             BufferedWriter writer = null;
             try {
@@ -149,17 +157,9 @@ public class WordCountTopology {
                     e.printStackTrace();
                 }
             }
-
-            dumpCounters();
+            System.out.println("cleanup, end save counterMap into file");
         }
     }
-
-    public static final String ID_FILE_READ_SPOUT = "file-reader-spout";
-    public static final String ID_SPLIT_BOLT = "split-bolt";
-    public static final String ID_COUNT_BOLT = "count-bolt";
-
-    public static final String DATA_PATH = "StormData.txt";
-    public static final String RESULT_PATH = "wordcount_result.txt";
 
     // Counter Code START
     public static int emit_counter = 0;
@@ -184,8 +184,17 @@ public class WordCountTopology {
     }
     // Counter Code END
 
+    public static final String ID_FILE_READ_SPOUT = "file-reader-spout";
+    public static final String ID_SPLIT_BOLT = "split-bolt";
+    public static final String ID_COUNT_BOLT = "count-bolt";
+
+    public static final String DATA_PATH = "StormData.txt";
+    public static final String RESULT_PATH = "wordcount_result.txt";
+
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
+        // this topology is designed work on a single machine
+        // since file read in spout is hard to achieve parallelism
         builder.setSpout(ID_FILE_READ_SPOUT, new FileReaderSpout(), 1);
         builder.setBolt(ID_SPLIT_BOLT, new SplitSentenceBolt(), 8).shuffleGrouping(ID_FILE_READ_SPOUT);
         builder.setBolt(ID_COUNT_BOLT, new WordCountBolt(), 1).shuffleGrouping(ID_SPLIT_BOLT);
@@ -203,6 +212,7 @@ public class WordCountTopology {
                 cluster.submitTopology("word-count", conf, builder.createTopology());
 
                 // local debug cluster only process 1 hour
+                // make sure the time is long enough, the debug user have to stop manually
                 Thread.sleep(60 * 1000 * 60);
 
                 cluster.shutdown();

@@ -24,7 +24,8 @@ public class TwitterHashtagTopology {
                 LocalCluster cluster = new LocalCluster();
                 cluster.submitTopology("twitter-hashtag", conf, builder.createTopology());
 
-                Thread.sleep(10000);
+                // local debug, sleep 10s
+                Thread.sleep(10 * 1000);
 
                 cluster.shutdown();
             }
