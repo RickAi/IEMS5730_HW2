@@ -8,6 +8,9 @@ import org.apache.storm.tuple.Fields;
 
 public class TwitterHashTagTopology {
 
+    // 10 mins for print report
+    public static final int TIME_INTERVAL_PRINT = 10 * 60 * 1000;
+
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
         TweetSpout tweetSpout = new TweetSpout(
@@ -18,7 +21,7 @@ public class TwitterHashTagTopology {
         );
         builder.setSpout("tweet-spout", tweetSpout, 1);
         builder.setBolt("hashtag-bolt", new HashTagBolt(), 10).shuffleGrouping("tweet-spout");
-        builder.setBolt("rolling-count-bolt", new RollingCountBolt(30, 10), 1)
+        builder.setBolt("rolling-count-bolt", new RollingCountBolt(TIME_INTERVAL_PRINT, TIME_INTERVAL_PRINT), 1)
                 .fieldsGrouping("hashtag-bolt", new Fields("type", "hashtag"));
         builder.setBolt("reporter-bolt", new ReporterBolt(), 1).globalGrouping("rolling-count-bolt");
 
