@@ -9,7 +9,7 @@ import org.apache.storm.tuple.Fields;
 public class TwitterHashTagTopology {
 
     // 10 mins for print report
-    public static final int TIME_INTERVAL_PRINT = 10 * 60 * 1000;
+    public static final int TIME_INTERVAL_PRINT = 10 * 60;
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
