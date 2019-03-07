@@ -52,7 +52,7 @@ public class WordCountTopology {
                 String buffer;
                 if ((buffer = this.br.readLine()) != null) {
                     this.collector.emit(new Values(buffer));
-                    counter(CounterType.EMIT);
+                    //counter(CounterType.EMIT);
                 } else {
                     processed = true;
                 }
@@ -86,11 +86,11 @@ public class WordCountTopology {
             for (String word : words) {
                 if (!word.isEmpty()) {
                     this.collector.emit(new Values(word));
-                    counter(CounterType.EMIT);
+                    //counter(CounterType.EMIT);
                 }
             }
             this.collector.ack(tuple);
-            counter(CounterType.ACK);
+            //counter(CounterType.ACK);
         }
 
         @Override
@@ -119,7 +119,7 @@ public class WordCountTopology {
                 counterMap.put(word, 1);
             }
             this.collector.ack(tuple);
-            counter(CounterType.ACK);
+            //counter(CounterType.ACK);
         }
 
         @Override
@@ -128,7 +128,7 @@ public class WordCountTopology {
         @Override
         public void cleanup() {
             // dump counters into the console
-            dumpCounters();
+            //dumpCounters();
 
             System.out.println("cleanup, sortByValue counterMap start");
             // sort and save result into local file
@@ -168,20 +168,13 @@ public class WordCountTopology {
     }
 
     // Counter Code START
-    // There code are intended used in local computer
-    // When the code run on cluster, these should be closed
-    public static boolean LOCAL_MODE = false;
-
+    // !!! LOCAL USED ONLY
     public static int emit_counter = 0;
     public static int ack_counter = 0;
 
     public static enum CounterType {EMIT, ACK};
 
     public static synchronized void counter(CounterType type) {
-        if (!LOCAL_MODE) {
-            return ;
-        }
-
         if (type == CounterType.EMIT) {
             emit_counter += 1;
         } else if (type == CounterType.ACK) {
@@ -190,10 +183,6 @@ public class WordCountTopology {
     }
 
     public static void dumpCounters() {
-        if (!LOCAL_MODE) {
-            return ;
-        }
-
         System.out.println("--------DUMP COUNTERS START--------");
         System.out.println("The number of tuple emitted:" + emit_counter);
         System.out.println("The number of tuple acked:" + ack_counter);
@@ -206,9 +195,9 @@ public class WordCountTopology {
     public static final String ID_SPLIT_BOLT = "split-bolt";
     public static final String ID_COUNT_BOLT = "count-bolt";
 
+    // these two path need to be replaced to local path if debug in local
     public static String DATA_PATH = "/home/yongbiaoai/projects/IEMS5730_HW2/StormData.txt";
-    // generate word count result
-    public static final String RESULT_PATH = "wordcount_result.txt";
+    public static final String RESULT_PATH = "/home/yongbiaoai/projects/IEMS5730_HW2/wordcount_result.txt";
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
@@ -221,11 +210,9 @@ public class WordCountTopology {
 
         try {
             if (args != null && args.length > 0) {
-                LOCAL_MODE = false;
                 conf.setNumWorkers(2);
                 StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
             } else {
-                LOCAL_MODE = true;
                 conf.setMaxTaskParallelism(3);
                 LocalCluster cluster = new LocalCluster();
                 cluster.submitTopology("word-count", conf, builder.createTopology());
