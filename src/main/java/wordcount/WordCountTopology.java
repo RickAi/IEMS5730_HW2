@@ -23,37 +23,42 @@ public class WordCountTopology {
 
         private SpoutOutputCollector collector;
         private boolean processed = false;
+        private BufferedReader br = null;
 
         @Override
         public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
             this.collector = spoutOutputCollector;
+            try {
+                this.br = new BufferedReader(new FileReader(DATA_PATH));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
         public void nextTuple() {
-            if (processed) {
+            // DO NOT emit the entire file in one nextTuple to avoid failure caused by network
+            // congestion. You can emit one line for each ​nextTuple( )​ call.
+            if (this.br == null || processed) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            } else {
-                BufferedReader reader = null;
-                try {
-                    reader = new BufferedReader(new FileReader(DATA_PATH));
-                    String buffer;
-                    while ((buffer = reader.readLine()) != null) {
-                        this.collector.emit(new Values(buffer));
-                        counter(CounterType.EMIT);
-                    }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    // make sure the file only processed once
+            }
+
+            try {
+                String buffer;
+                if ((buffer = this.br.readLine()) != null) {
+                    this.collector.emit(new Values(buffer));
+                    counter(CounterType.EMIT);
+                } else {
                     processed = true;
                 }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
@@ -75,8 +80,8 @@ public class WordCountTopology {
         @Override
         public void execute(Tuple tuple) {
             String line = tuple.getStringByField("line");
-            // split with regex, only include alphabet code
-            String[] words = line.split("\\W+");
+            // split with space
+            String[] words = line.split(" ");
             for (String word : words) {
                 if (!word.isEmpty()) {
                     this.collector.emit(new Values(word));
@@ -162,12 +167,20 @@ public class WordCountTopology {
     }
 
     // Counter Code START
+    // There code are intended used in local computer
+    // When the code run on cluster, these should be closed
+    public static boolean LOCAL_MODE = false;
+
     public static int emit_counter = 0;
     public static int ack_counter = 0;
 
     public static enum CounterType {EMIT, ACK};
 
     public static synchronized void counter(CounterType type) {
+        if (!LOCAL_MODE) {
+            return ;
+        }
+
         if (type == CounterType.EMIT) {
             emit_counter += 1;
         } else if (type == CounterType.ACK) {
@@ -176,6 +189,10 @@ public class WordCountTopology {
     }
 
     public static void dumpCounters() {
+        if (!LOCAL_MODE) {
+            return ;
+        }
+
         System.out.println("--------DUMP COUNTERS START--------");
         System.out.println("The number of tuple emitted:" + emit_counter);
         System.out.println("The number of tuple acked:" + ack_counter);
@@ -193,27 +210,27 @@ public class WordCountTopology {
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
-        // this topology is designed work on a single machine
-        // since file read in spout is hard to achieve parallelism
         builder.setSpout(ID_FILE_READ_SPOUT, new FileReaderSpout(), 1);
         builder.setBolt(ID_SPLIT_BOLT, new SplitSentenceBolt(), 8).shuffleGrouping(ID_FILE_READ_SPOUT);
         builder.setBolt(ID_COUNT_BOLT, new WordCountBolt(), 1).globalGrouping(ID_SPLIT_BOLT);
 
         Config conf = new Config();
-        conf.setDebug(true);
+        conf.setDebug(false);
 
         try {
             if (args != null && args.length > 0) {
-                conf.setNumWorkers(1);
+                LOCAL_MODE = false;
+                conf.setNumWorkers(2);
                 StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
             } else {
+                LOCAL_MODE = true;
                 conf.setMaxTaskParallelism(3);
                 LocalCluster cluster = new LocalCluster();
                 cluster.submitTopology("word-count", conf, builder.createTopology());
 
                 // local debug cluster only process 20min
                 // make sure the time is long enough until the debug user stop manually
-                Thread.sleep(20 * 60 * 1000);
+                Thread.sleep(60 * 1000);
 
                 cluster.shutdown();
             }
