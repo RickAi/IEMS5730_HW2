@@ -3,51 +3,9 @@ package twitter.tools;
 import java.io.Serializable;
 import java.util.Map;
 
-/**
- * This class counts objects in a sliding window fashion.
- * <p/>
- * It is designed 1) to give multiple "producer" threads write access to the counter, i.e. being able to increment
- * counts of objects, and 2) to give a single "consumer" thread (e.g. {@link PeriodicSlidingWindowCounter}) read access
- * to the counter. Whenever the consumer thread performs a read operation, this class will advance the head slot of the
- * sliding window counter. This means that the consumer thread indirectly controls where writes of the producer threads
- * will go to. Also, by itself this class will not advance the head slot.
- * <p/>
- * A note for analyzing data based on a sliding window count: During the initial <code>windowLengthInSlots</code>
- * iterations, this sliding window counter will always return object counts that are equal or greater than in the
- * previous iteration. This is the effect of the counter "loading up" at the very start of its existence. Conceptually,
- * this is the desired behavior.
- * <p/>
- * To give an example, using a counter with 5 slots which for the sake of this example represent 1 minute of time each:
- * <p/>
- * <pre>
- * {@code
- * Sliding window counts of an object X over time
- *
- * Minute (timeline):
- * 1    2   3   4   5   6   7   8
- *
- * Observed counts per minute:
- * 1    1   1   1   0   0   0   0
- *
- * Counts returned by counter:
- * 1    2   3   4   4   3   2   1
- * }
- * </pre>
- * <p/>
- * As you can see in this example, for the first <code>windowLengthInSlots</code> (here: the first five minutes) the
- * counter will always return counts equal or greater than in the previous iteration (1, 2, 3, 4, 4). This initial load
- * effect needs to be accounted for whenever you want to perform analyses such as trending topics; otherwise your
- * analysis algorithm might falsely identify the object to be trending as the counter seems to observe continuously
- * increasing counts. Also, note that during the initial load phase <em>every object</em> will exhibit increasing
- * counts.
- * <p/>
- * On a high-level, the counter exhibits the following behavior: If you asked the example counter after two minutes,
- * "how often did you count the object during the past five minutes?", then it should reply "I have counted it 2 times
- * in the past five minutes", implying that it can only account for the last two of those five minutes because the
- * counter was not running before that time.
- *
- * @param <T> The type of those objects we want to count.
- */
+// This code was refers from the apache/storm storm-starter:
+// https://github.com/apache/storm/blob/master/examples/storm-starter/src/jvm/org/apache/storm/starter/tools/SlidingWindowCounter.java
+
 public final class SlidingWindowCounter<T> implements Serializable {
 
     private static final long serialVersionUID = -2645063988768785810L;

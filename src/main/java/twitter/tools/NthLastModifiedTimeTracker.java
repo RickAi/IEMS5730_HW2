@@ -3,14 +3,10 @@ package twitter.tools;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.storm.utils.Time;
 
-/**
- * This class tracks the time-since-last-modify of a "thing" in a rolling fashion.
- * <p/>
- * For example, create a 5-slot tracker to track the five most recent time-since-last-modify.
- * <p/>
- * You must manually "mark" that the "something" that you want to track -- in terms of modification times -- has just
- * been modified.
- */
+
+// This code was refers from the apache/storm storm-starter:
+// https://github.com/apache/storm/blob/master/examples/storm-starter/src/jvm/org/apache/storm/starter/tools/NthLastModifiedTimeTracker.java
+
 public class NthLastModifiedTimeTracker {
 
     private static final int MILLIS_IN_SEC = 1000;

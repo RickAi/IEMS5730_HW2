@@ -13,6 +13,7 @@ public class TwitterHashTagTopology {
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
+        // key, secret, token and secret from query tweets from API
         TweetSpout tweetSpout = new TweetSpout(
                 "uIf2XoMNpF08egIeVSF4cXBfT",
                 "YXU76uvy7BJTzjxunCR0iYnEnWOBHadcAAHNVTINaXqiITesjt",
@@ -20,9 +21,12 @@ public class TwitterHashTagTopology {
                 "xl4ft5od8Kks17FakZv30N3VR0LSJmmG2uqCOAtfZ75j3"
         );
         builder.setSpout("tweet-spout", tweetSpout, 1);
+        // extract tags from tweet
         builder.setBolt("hashtag-bolt", new HashTagBolt(), 10).shuffleGrouping("tweet-spout");
+        // only emit in every time slot (10 times as required)
         builder.setBolt("rolling-count-bolt", new RollingCountBolt(TIME_INTERVAL_PRINT * 2, TIME_INTERVAL_PRINT), 1)
                 .fieldsGrouping("hashtag-bolt", new Fields("type", "hashtag"));
+        // report the popular hash tags
         builder.setBolt("reporter-bolt", new ReporterBolt(), 1).globalGrouping("rolling-count-bolt");
 
         Config conf = new Config();

@@ -14,10 +14,14 @@ import twitter4j.conf.ConfigurationBuilder;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * This code is refers to udacity/ud381:
- * https://github.com/udacity/ud381/blob/master/lesson3/stage5/src/jvm/udacity/storm/TweetSpout.java
- */
+
+// This code is refers from udacity/ud381:
+// https://github.com/udacity/ud381/blob/master/lesson3/stage5/src/jvm/udacity/storm/TweetSpout.java
+//
+// Add filter for trump keyword:
+// final FilterQuery query = new FilterQuery();
+// query.track("Trump", "trump", "TRUMP");
+
 public class TweetSpout extends BaseRichSpout {
     // Twitter API authentication credentials
     String custkey, custsecret;
