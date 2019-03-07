@@ -45,6 +45,7 @@ public class WordCountTopology {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                return ;
             }
 
             try {
@@ -205,7 +206,11 @@ public class WordCountTopology {
     public static final String ID_SPLIT_BOLT = "split-bolt";
     public static final String ID_COUNT_BOLT = "count-bolt";
 
-    public static final String DATA_PATH = "StormData_tmp.txt";
+    // for local debug only
+    public static String DATA_PATH = "StormData_tmp.txt";
+    // for remote cluster
+    public static String REMOTE_DATA_PATH = "/home/yongbiaoai/projects/IEMS5730_HW2/StormData.txt";
+    // generate word count result
     public static final String RESULT_PATH = "wordcount_result.txt";
 
     public static void main(String[] args) {
@@ -220,6 +225,7 @@ public class WordCountTopology {
         try {
             if (args != null && args.length > 0) {
                 LOCAL_MODE = false;
+                DATA_PATH = REMOTE_DATA_PATH;
                 conf.setNumWorkers(2);
                 StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
             } else {
